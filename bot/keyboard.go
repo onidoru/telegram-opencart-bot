@@ -79,7 +79,7 @@ func newMainMenuKeyboard() tgbotapi.InlineKeyboardMarkup {
 		tgbotapi.NewInlineKeyboardRow(
 			tgbotapi.NewInlineKeyboardButtonData(
 				"📃 Menu",
-				to_root.String(),
+				to_main_root.String(),
 			)),
 		tgbotapi.NewInlineKeyboardRow(
 			tgbotapi.NewInlineKeyboardButtonData(

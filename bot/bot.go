@@ -179,8 +179,8 @@ func (b Bot) processCallback(update tgbotapi.Update, lastMessage tgbotapi.Messag
 	} else {
 		// process commands
 
-		// found to_root command
-		if strings.HasPrefix(callbackData, "to_root") {
+		// found to_main_root command
+		if strings.HasPrefix(callbackData, "to_main_root") {
 			// show root menu
 			c := opencartsdk.NewClient("https://telegram-coffee-shop.herokuapp.com/")
 			root := c.GetRoot()
