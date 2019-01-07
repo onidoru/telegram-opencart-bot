@@ -9,7 +9,7 @@ import (
 )
 
 const (
-	hostURL = "https://telegrams-coffee-shop.herokuapp.com/"
+	hostURL = "https://telegram-coffee-shop.herokuapp.com/"
 )
 
 type Bot struct {
