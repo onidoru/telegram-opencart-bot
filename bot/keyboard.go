@@ -47,7 +47,7 @@ func newCategoryKeyboard(rootCategory *models.Category) tgbotapi.InlineKeyboardM
 		row := tgbotapi.NewInlineKeyboardRow(
 			tgbotapi.NewInlineKeyboardButtonData(
 				"Back To Main Menu",
-				to_main_menu.String(),
+				main_to_menu.String(),
 			),
 		)
 
@@ -79,17 +79,17 @@ func newMainMenuKeyboard() tgbotapi.InlineKeyboardMarkup {
 		tgbotapi.NewInlineKeyboardRow(
 			tgbotapi.NewInlineKeyboardButtonData(
 				"📃 Menu",
-				to_main_root.String(),
+				main_to_root.String(),
 			)),
 		tgbotapi.NewInlineKeyboardRow(
 			tgbotapi.NewInlineKeyboardButtonData(
 				"🛒 Cart",
-				to_cart_menu.String(),
+				main_to_cart_menu.String(),
 			)),
 		tgbotapi.NewInlineKeyboardRow(
 			tgbotapi.NewInlineKeyboardButtonData(
 				"⚙️ Settings",
-				to_settings.String(),
+				main_to_settings.String(),
 			)),
 	)
 }
@@ -133,7 +133,7 @@ func newCartViewKeyboard(cart *models.Cart) tgbotapi.InlineKeyboardMarkup {
 	backRow := tgbotapi.NewInlineKeyboardRow(
 		tgbotapi.NewInlineKeyboardButtonData(
 			"🔙 Back to Main Menu",
-			to_main_menu.String(),
+			main_to_menu.String(),
 		))
 
 	rows = append(rows, backRow)
@@ -162,7 +162,7 @@ func newCartMenuKeyboard() tgbotapi.InlineKeyboardMarkup {
 		tgbotapi.NewInlineKeyboardRow(
 			tgbotapi.NewInlineKeyboardButtonData(
 				"🔙 Back to Main Menu",
-				to_main_menu.String(),
+				main_to_menu.String(),
 			)),
 	)
 }

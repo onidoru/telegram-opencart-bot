@@ -80,3 +80,12 @@ func (client *Client) UpdateUserCartFromServer(user *models.User) {
 	user.Cart = parseCart(rawJson.Get("buyItems"))
 }
 
+func (client *Client) RemoveItemFromCart(user *models.User, item *models.Goods)  {
+	resp, err := client.R().
+		Delete("customer/" + strconv.Itoa(user.ID) + "/cart/goods/" + strconv.FormatInt(item.ID, 10))
+	if err != nil {
+		client.Log.Fatal(err)
+	}
+	client.Log.Println(resp)
+}
+

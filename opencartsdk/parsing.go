@@ -52,7 +52,7 @@ func parseCart(rawJson gjson.Result) *models.Cart {
 		item := &models.Goods{}
 
 		if value.Get("goods").Exists() {
-			item.ID = value.Get("goos.id").Int()
+			item.ID = value.Get("goods.id").Int()
 			item.Name = value.Get("goods.name").String()
 			item.Description = value.Get("goods.description").String()
 			item.Image, _ = url.Parse(value.Get("goods.image").String())
