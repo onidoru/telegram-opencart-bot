@@ -1,12 +1,12 @@
 package bot
 
 import (
+	"fmt"
 	"github.com/go-telegram-bot-api/telegram-bot-api"
 	"github.com/onidoru/telegram-opencart-bot/domain/models"
 	"github.com/onidoru/telegram-opencart-bot/opencartsdk"
 	"strconv"
 	"strings"
-	"sync"
 )
 
 type Bot struct {
@@ -33,37 +33,15 @@ func (b *Bot) Run() {
 		panic(err)
 	}
 
-	users := make(map[int]tgbotapi.Message)
-
-	wg := sync.WaitGroup{}
-	wg.Add(1)
-
+	lastSentMessage := tgbotapi.Message{}
 	for update := range updates {
-		userID := getUserID(update)
 
-		// if user is not registered yet, add to map
-		if update.Message != nil {
-			if _, ok := users[userID]; !ok {
-				users[userID] = tgbotapi.Message{}
-			}
-		} else if update.CallbackQuery != nil {
-			if _, ok := users[userID]; !ok {
-				users[userID] = tgbotapi.Message{}
-			}
-		}
-
-		// finally process
-		if update.CallbackQuery != nil {
-			users[userID], _ = b.processCallback(update, users[userID])
-		} else if update.Message != nil {
-			users[userID], _ = b.processNewMessage(update)
+		if update.Message == nil {
+			lastSentMessage, _ = b.processCallback(update, lastSentMessage)
+		} else {
+			lastSentMessage, _ = b.processNewMessage(update)
 		}
 	}
-
-}
-
-func (b *Bot) processUser() {
-
 }
 
 // processNewMessage processes new user message and returns bot's answer.
@@ -89,15 +67,6 @@ func (b Bot) processNewMessage(update tgbotapi.Update) (tgbotapi.Message, error)
 	return b.Send(msg)
 }
 
-func getUserID(update tgbotapi.Update) int {
-	if update.Message != nil {
-		return update.Message.From.ID
-	} else if update.CallbackQuery != nil {
-		return update.CallbackQuery.From.ID
-	}
-	return 0
-}
-
 // processCallback processes menu actions and updates existing message.
 // No new messages are sent.
 func (b Bot) processCallback(update tgbotapi.Update, lastMessage tgbotapi.Message) (tgbotapi.Message, error) {
@@ -121,40 +90,26 @@ func (b Bot) processCallback(update tgbotapi.Update, lastMessage tgbotapi.Messag
 		if category != nil {
 			return b.updateWithCategory(lastMessage, category)
 		}
+
 	} else {
-		// process the command
+		// start looking for command
 		if strings.HasPrefix(callbackData, "back_to_") {
 			// find out where to go back
 			backTo, _ := strconv.ParseInt(strings.Trim(callbackData, "back_to_"), 10, 64)
 			_, category, _ := root.GetByID(backTo)
+			fmt.Println(category)
+			fmt.Println(backTo)
 
 			return b.updateWithCategory(lastMessage, category)
-		} else if strings.HasPrefix(callbackData, "add_to_cart_") {
-			// if no cart yet, init cart
-
-
-			// notify on added item
-			alert := tgbotapi.NewCallbackWithAlert("alerted", "Added!")
-			alert.CallbackQueryID = update.CallbackQuery.ID
-			b.AnswerCallbackQuery(alert)
-
-			return lastMessage, nil
 		}
 	}
 
 	return tgbotapi.Message{}, nil
 }
 
-func registerUser(user *tgbotapi.User) *models.User {
+func registerUser(user *tgbotapi.User) {
 	c := opencartsdk.NewClient("https://telegram-coffee-shop.herokuapp.com/")
 	c.RegisterUser(user)
-
-	return models.NewUser(user)
-}
-
-func updateCart(user models.User) {
-	c := opencartsdk.NewClient("https://telegram-coffee-shop.herokuapp.com/")
-	c.UpdateUserCart(user)
 }
 
 func (b Bot) updateWithItem(lastMessage tgbotapi.Message, item *models.Goods) (tgbotapi.Message, error) {

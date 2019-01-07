@@ -54,7 +54,7 @@ func newOrderKeyboard(itemID, backTo int64) tgbotapi.InlineKeyboardMarkup {
 		tgbotapi.NewInlineKeyboardRow(
 			tgbotapi.NewInlineKeyboardButtonData(
 				"Order Item",
-				"add_to_cart_"+strconv.FormatInt(itemID, 10),
+				"order_item_"+strconv.FormatInt(itemID, 10),
 			),
 			tgbotapi.NewInlineKeyboardButtonData(
 				"Back",

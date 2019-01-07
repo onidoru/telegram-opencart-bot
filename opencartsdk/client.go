@@ -96,7 +96,3 @@ func (client *Client) RegisterUser(user *tgbotapi.User) {
 func (client *Client) GetGoodsByID(id int64) {
 
 }
-
-func (client *Client) UpdateUserCart(user models.User)  {
-
-}
