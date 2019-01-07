@@ -17,5 +17,5 @@ func NewUser(tgUser *tgbotapi.User) *User  {
 }
 
 func (u *User) InitCart()  {
-	u.Cart = newCart()
+	u.Cart = NewCart()
 }

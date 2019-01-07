@@ -6,6 +6,6 @@ import (
 )
 
 type storagePair struct {
-	user models.User
+	user *models.User
 	lastMessage tgbotapi.Message
 }

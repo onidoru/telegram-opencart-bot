@@ -86,17 +86,73 @@ func (client *Client) RegisterUser(user *tgbotapi.User) {
 	formMap["id"] = strconv.Itoa(user.ID)
 	formMap["language_code"] = user.LanguageCode
 
-	resp, err := client.R().SetFormData(formMap).Put("customer")
+	// resp, err := client.R().SetFormData(formMap).Put("customer")
+	resp, err := client.R().
+		SetHeader("Content-Type", "application/json").
+		SetBody(user).
+		Put("customer")
+
 	if err != nil {
 		client.Log.Fatal(err)
 	}
-	fmt.Println(resp.RawResponse)
+	fmt.Println(resp.Body())
 }
 
 func (client *Client) GetGoodsByID(id int64) {
 
 }
 
-func (client *Client) UpdateUserCart(user models.User)  {
+func (client *Client) UpdateUserCartWithOn(user *models.User, item *models.Goods, amount int) {
+	formMap := make(map[string]string)
+	formMap["amount"] = strconv.Itoa(amount)
 
+	resp, err := client.R().
+		SetFormData(formMap).
+		Post("customer/" + strconv.Itoa(user.ID) + "/cart/goods/" + strconv.FormatInt(item.ID, 10))
+
+	if err != nil {
+		panic(err)
+	}
+
+	client.Log.Println(resp.Body())
+}
+
+func (client *Client) UpdateUserCartFromServer(user *models.User) {
+	resp, err := client.R().
+		Get("customer/" + strconv.Itoa(user.ID) + "/cart/")
+	if err != nil {
+		client.Log.Fatal(err)
+	}
+
+	rawJson := gjson.ParseBytes(resp.Body())
+	user.Cart = parseCar(rawJson.Get("buyItems"))
+}
+
+func parseCar(rawJson gjson.Result) *models.Cart {
+	cart := models.NewCart()
+	if rawJson.Get("empty").Bool() == true {
+		return cart
+	}
+	buyItems := rawJson.Get("..0")
+
+	parse := func(key, value gjson.Result) bool {
+		item := &models.Goods{}
+
+		if value.Get("goods").Exists() {
+			item.ID = value.Get("goos.id").Int()
+			item.Name = value.Get("goods.name").String()
+			item.Description = value.Get("goods.description").String()
+			item.Image, _ = url.Parse(value.Get("goods.image").String())
+			item.Price = *money.New(value.Get("goods.price").Int(), "UAH")
+		}
+
+		amount := int(value.Get("amount").Int())
+		cart.AddGoods(item, amount)
+
+		return true
+	}
+
+	buyItems.ForEach(parse)
+
+	return cart
 }

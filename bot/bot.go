@@ -1,12 +1,13 @@
 package bot
 
 import (
+	"fmt"
 	"github.com/go-telegram-bot-api/telegram-bot-api"
 	"github.com/onidoru/telegram-opencart-bot/domain/models"
+	"github.com/onidoru/telegram-opencart-bot/domain/repository"
 	"github.com/onidoru/telegram-opencart-bot/opencartsdk"
 	"strconv"
 	"strings"
-	"sync"
 )
 
 type Bot struct {
@@ -33,33 +34,45 @@ func (b *Bot) Run() {
 		panic(err)
 	}
 
-	users := make(map[int]tgbotapi.Message)
-
-	wg := sync.WaitGroup{}
-	wg.Add(1)
+	users := repository.NewInMemoryStorage()
 
 	for update := range updates {
 		userID := getUserID(update)
 
 		// if user is not registered yet, add to map
 		if update.Message != nil {
-			if _, ok := users[userID]; !ok {
-				users[userID] = tgbotapi.Message{}
+			if _, ok := users.GetUserByID(userID); !ok {
+				users.CreateWithTgUser(update.Message.From)
+				users.StoreLastMessageByID(userID, tgbotapi.Message{})
 			}
 		} else if update.CallbackQuery != nil {
-			if _, ok := users[userID]; !ok {
-				users[userID] = tgbotapi.Message{}
+			if _, ok := users.GetUserByID(userID); !ok {
+				users.CreateWithTgUser(update.CallbackQuery.From)
+				users.StoreLastMessageByID(userID, tgbotapi.Message{})
 			}
+		} else if update.PreCheckoutQuery != nil {
+			newPrecheckoutConfig := tgbotapi.PreCheckoutConfig{
+				PreCheckoutQueryID: update.PreCheckoutQuery.ID,
+				OK:                 true,
+				ErrorMessage:       "",
+			}
+
+			responce, err := b.AnswerPreCheckoutQuery(newPrecheckoutConfig)
+
+			fmt.Println(responce, err)
 		}
 
 		// finally process
 		if update.CallbackQuery != nil {
-			users[userID], _ = b.processCallback(update, users[userID])
+			lastMessage, _ := users.GetLastMessageByID(userID)
+			user, _ := users.GetUserByID(userID)
+			lastMessage, _ = b.processCallback(update, lastMessage, user)
+			users.StoreLastMessageByID(userID, lastMessage)
 		} else if update.Message != nil {
-			users[userID], _ = b.processNewMessage(update)
+			lastMessage, _ := b.processNewMessage(update)
+			users.StoreLastMessageByID(userID, lastMessage)
 		}
 	}
-
 }
 
 func (b *Bot) processUser() {
@@ -76,15 +89,31 @@ func (b Bot) processNewMessage(update tgbotapi.Update) (tgbotapi.Message, error)
 		case "start":
 			registerUser(update.Message.From)
 			msg.Text = "Hello Sir, Welcome to our Hipster Shop"
+		case "pay":
+			price := tgbotapi.LabeledPrice{
+				Label:  "asd",
+				Amount: 30,
+			}
+
+			newInvoice := tgbotapi.NewInvoice(
+				update.Message.Chat.ID,
+				"Test Coffe",
+				"Test description",
+				"Test payload",
+				"635983722:LIVE:i45905717197",
+				"StartParam",
+				"UAH",
+				prices,
+			)
+
+			return b.Send(newInvoice)
 		}
 	} else {
+		registerUser(update.Message.From)
 		msg.Text = "ruh sir no understand but here is our starting keyboard sir"
 	}
 
-	// show root category
-	c := opencartsdk.NewClient("https://telegram-coffee-shop.herokuapp.com/")
-	root := c.GetRoot()
-	msg.ReplyMarkup = newCategoryKeyboard(root)
+	msg.ReplyMarkup = newMainMenuKeyboard()
 
 	return b.Send(msg)
 }
@@ -100,7 +129,7 @@ func getUserID(update tgbotapi.Update) int {
 
 // processCallback processes menu actions and updates existing message.
 // No new messages are sent.
-func (b Bot) processCallback(update tgbotapi.Update, lastMessage tgbotapi.Message) (tgbotapi.Message, error) {
+func (b Bot) processCallback(update tgbotapi.Update, lastMessage tgbotapi.Message, user *models.User) (tgbotapi.Message, error) {
 	c := opencartsdk.NewClient("https://telegram-coffee-shop.herokuapp.com/")
 	root := c.GetRoot()
 
@@ -114,24 +143,149 @@ func (b Bot) processCallback(update tgbotapi.Update, lastMessage tgbotapi.Messag
 
 		// if item is chosen, show item description and order menu
 		if item != nil {
-			return b.updateWithItem(lastMessage, item)
+			return b.updateWith(
+				tgbotapi.NewEditMessageText(
+					lastMessage.Chat.ID,
+					lastMessage.MessageID,
+					item.String(),
+				),
+
+				tgbotapi.NewEditMessageReplyMarkup(
+					lastMessage.Chat.ID,
+					lastMessage.MessageID,
+					newOrderKeyboard(item.ID, item.ParentID),
+				),
+			)
 		}
 
 		// if category is chosen, show list of all items and subcategories of the chosen category
 		if category != nil {
-			return b.updateWithCategory(lastMessage, category)
+
+			return b.updateWith(
+				tgbotapi.NewEditMessageText(
+					lastMessage.Chat.ID,
+					lastMessage.MessageID,
+					"Menu: ",
+				),
+				tgbotapi.NewEditMessageReplyMarkup(
+					lastMessage.Chat.ID,
+					lastMessage.MessageID,
+					newCategoryKeyboard(category),
+				),
+			)
 		}
 	} else {
-		// process the command
+		// process commands
+
+		// found to_root command
+		if strings.HasPrefix(callbackData, "to_root") {
+			// show root menu
+			c := opencartsdk.NewClient("https://telegram-coffee-shop.herokuapp.com/")
+			root := c.GetRoot()
+
+			return b.updateWith(
+				tgbotapi.NewEditMessageText(
+					lastMessage.Chat.ID,
+					lastMessage.MessageID,
+					"Menu: ",
+				),
+				tgbotapi.NewEditMessageReplyMarkup(
+					lastMessage.Chat.ID,
+					lastMessage.MessageID,
+					newCategoryKeyboard(root),
+				),
+			)
+		}
+
+		// found to_cart_menu command
+		if strings.EqualFold(callbackData, "to_cart_menu") {
+			// update user view with cart menu
+			return b.updateWith(
+				tgbotapi.NewEditMessageText(
+					lastMessage.Chat.ID,
+					lastMessage.MessageID,
+					"🛒 Cart:",
+				),
+				tgbotapi.NewEditMessageReplyMarkup(
+					lastMessage.Chat.ID,
+					lastMessage.MessageID,
+					newCartMenuKeyboard(),
+				),
+			)
+
+		}
+
+		// found view_cart command
+		if strings.EqualFold(callbackData, "view_cart") {
+			// show cart menu
+			c := opencartsdk.NewClient("https://telegram-coffee-shop.herokuapp.com/")
+			c.UpdateUserCartFromServer(user)
+
+			// fmt.Println(user.Cart)
+
+			return b.updateWith(
+				tgbotapi.NewEditMessageText(
+					lastMessage.Chat.ID,
+					lastMessage.MessageID,
+					"🛒 Cart:",
+				),
+				tgbotapi.NewEditMessageReplyMarkup(
+					lastMessage.Chat.ID,
+					lastMessage.MessageID,
+					newCartViewKeyboard(user.Cart),
+				),
+			)
+		}
+
+		// found back_to command from concrete item description
 		if strings.HasPrefix(callbackData, "back_to_") {
 			// find out where to go back
-			backTo, _ := strconv.ParseInt(strings.Trim(callbackData, "back_to_"), 10, 64)
+			cutted := strings.Trim(callbackData, "back_to_")
+			backTo, err := strconv.ParseInt(cutted, 10, 64)
+			fmt.Println(cutted)
+			if err != nil {
+				switch cutted {
+				case "menu":
+					return b.updateWith(
+						tgbotapi.NewEditMessageText(
+							lastMessage.Chat.ID,
+							lastMessage.MessageID,
+							"Hello Sir, Welcome to our Hipster Shop",
+						),
+						tgbotapi.NewEditMessageReplyMarkup(
+							lastMessage.Chat.ID,
+							lastMessage.MessageID,
+							newMainMenuKeyboard(),
+						),
+					)
+				case "kek":
+				}
+			}
 			_, category, _ := root.GetByID(backTo)
 
-			return b.updateWithCategory(lastMessage, category)
+			return b.updateWith(
+				tgbotapi.NewEditMessageText(
+					lastMessage.Chat.ID,
+					lastMessage.MessageID,
+					"Menu: ",
+				),
+				tgbotapi.NewEditMessageReplyMarkup(
+					lastMessage.Chat.ID,
+					lastMessage.MessageID,
+					newCategoryKeyboard(category),
+				),
+			)
 		} else if strings.HasPrefix(callbackData, "add_to_cart_") {
-			// if no cart yet, init cart
+			// get chosen item id and concrete item from root
+			itemID, _ := strconv.ParseInt(strings.Trim(callbackData, "add_to_cart_"), 10, 64)
+			item, _, _ := root.GetByID(itemID)
 
+			if user.Cart == nil {
+				user.InitCart()
+			}
+
+			user.Cart.AddGoods(item, 1)
+			updateCart(user, item, 1)
 
 			// notify on added item
 			alert := tgbotapi.NewCallbackWithAlert("alerted", "Added!")
@@ -152,43 +306,16 @@ func registerUser(user *tgbotapi.User) *models.User {
 	return models.NewUser(user)
 }
 
-func updateCart(user models.User) {
+func updateCart(user *models.User, item *models.Goods, amount int) {
 	c := opencartsdk.NewClient("https://telegram-coffee-shop.herokuapp.com/")
-	c.UpdateUserCart(user)
+	c.UpdateUserCartWithOn(user, item, amount)
 }
 
-func (b Bot) updateWithItem(lastMessage tgbotapi.Message, item *models.Goods) (tgbotapi.Message, error) {
-
-	editedText := tgbotapi.NewEditMessageText(
-		lastMessage.Chat.ID,
-		lastMessage.MessageID,
-		item.String(),
-	)
+func (b Bot) updateWith(
+	editedText tgbotapi.EditMessageTextConfig,
+	editedMarkup tgbotapi.EditMessageReplyMarkupConfig,
+) (tgbotapi.Message, error) {
 	editedText.ParseMode = tgbotapi.ModeMarkdown
-
-	editedMarkup := tgbotapi.NewEditMessageReplyMarkup(
-		lastMessage.Chat.ID,
-		lastMessage.MessageID,
-		newOrderKeyboard(item.ID, item.ParentID),
-	)
-	b.Send(editedText)
-
-	return b.Send(editedMarkup)
-}
-
-func (b Bot) updateWithCategory(lastMessage tgbotapi.Message, category *models.Category) (tgbotapi.Message, error) {
-	editedMarkup := tgbotapi.NewEditMessageReplyMarkup(
-		lastMessage.Chat.ID,
-		lastMessage.MessageID,
-		newCategoryKeyboard(category),
-	)
-
-	editedText := tgbotapi.NewEditMessageText(
-		lastMessage.Chat.ID,
-		lastMessage.MessageID,
-		"Menu: ",
-	)
-
 	b.Send(editedText)
 
 	return b.Send(editedMarkup)
