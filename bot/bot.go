@@ -217,8 +217,8 @@ func (b Bot) processCallback(update tgbotapi.Update, lastMessage tgbotapi.Messag
 
 		}
 
-		// found view_cart command
-		if strings.EqualFold(callbackData, "view_cart") {
+		// found cart_view command
+		if strings.EqualFold(callbackData, "cart_view") {
 			// show cart menu
 			c := opencartsdk.NewClient("https://telegram-coffee-shop.herokuapp.com/")
 			c.UpdateUserCartFromServer(user)
@@ -239,7 +239,7 @@ func (b Bot) processCallback(update tgbotapi.Update, lastMessage tgbotapi.Messag
 			)
 		}
 
-		// found back_to command from concrete item description
+		// found goods_back_to command from concrete item description
 		if strings.HasPrefix(callbackData, "back_to_") {
 			// find out where to go back
 			cutted := strings.Trim(callbackData, "back_to_")

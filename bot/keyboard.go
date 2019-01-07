@@ -15,7 +15,7 @@ func newCategoryKeyboard(rootCategory *models.Category) tgbotapi.InlineKeyboardM
 		row := tgbotapi.NewInlineKeyboardRow(
 			tgbotapi.NewInlineKeyboardButtonData(
 				"☕ "+item.Name,
-				strconv.FormatInt(item.ID, 10),
+				goods_item_info.String()+strconv.FormatInt(item.ID, 10),
 			),
 		)
 		categoryItemButtons = append(categoryItemButtons, row)
@@ -27,7 +27,7 @@ func newCategoryKeyboard(rootCategory *models.Category) tgbotapi.InlineKeyboardM
 			row := tgbotapi.NewInlineKeyboardRow(
 				tgbotapi.NewInlineKeyboardButtonData(
 					"📒 "+childCategory.Name,
-					strconv.FormatInt(childCategory.ID, 10)),
+					goods_next_category.String()+strconv.FormatInt(childCategory.ID, 10)),
 			)
 			categoryItemButtons = append(categoryItemButtons, row)
 		}
@@ -38,7 +38,7 @@ func newCategoryKeyboard(rootCategory *models.Category) tgbotapi.InlineKeyboardM
 		row := tgbotapi.NewInlineKeyboardRow(
 			tgbotapi.NewInlineKeyboardButtonData(
 				"Back",
-				"back_to_"+strconv.FormatInt(rootCategory.ParentID, 10),
+				goods_back_to.String()+strconv.FormatInt(rootCategory.ParentID, 10),
 			),
 		)
 
@@ -46,8 +46,8 @@ func newCategoryKeyboard(rootCategory *models.Category) tgbotapi.InlineKeyboardM
 	} else {
 		row := tgbotapi.NewInlineKeyboardRow(
 			tgbotapi.NewInlineKeyboardButtonData(
-				"Back",
-				"back_to_menu",
+				"Back To Main Menu",
+				to_main_menu.String(),
 			),
 		)
 
@@ -64,11 +64,11 @@ func newOrderKeyboard(itemID, backTo int64) tgbotapi.InlineKeyboardMarkup {
 		tgbotapi.NewInlineKeyboardRow(
 			tgbotapi.NewInlineKeyboardButtonData(
 				"Order Item",
-				"add_to_cart_"+strconv.FormatInt(itemID, 10),
+				goods_add_to_cart.String()+strconv.FormatInt(itemID, 10),
 			),
 			tgbotapi.NewInlineKeyboardButtonData(
 				"Back",
-				"back_to_"+strconv.FormatInt(backTo, 10),
+				goods_back_to.String()+strconv.FormatInt(backTo, 10),
 			),
 		),
 	)
@@ -79,17 +79,17 @@ func newMainMenuKeyboard() tgbotapi.InlineKeyboardMarkup {
 		tgbotapi.NewInlineKeyboardRow(
 			tgbotapi.NewInlineKeyboardButtonData(
 				"📃 Menu",
-				"to_root",
+				to_root.String(),
 			)),
 		tgbotapi.NewInlineKeyboardRow(
 			tgbotapi.NewInlineKeyboardButtonData(
 				"🛒 Cart",
-				"to_cart_menu",
+				to_cart_menu.String(),
 			)),
 		tgbotapi.NewInlineKeyboardRow(
 			tgbotapi.NewInlineKeyboardButtonData(
 				"⚙️ Settings",
-				"to_settings",
+				to_settings.String(),
 			)),
 	)
 }
@@ -109,13 +109,21 @@ func newCartViewKeyboard(cart *models.Cart) tgbotapi.InlineKeyboardMarkup {
 			tgbotapi.NewInlineKeyboardButtonData(
 				fmt.Sprintf(
 					"☕️ %v x %v - %v",
-					item.Name, amount, item.Price.Amount()),
-				"kek"),
+					item.Name, amount, item.Price.Amount(),
+				),
+				iddle.String(),
+			),
 		)
 
 		regAmountRow := tgbotapi.NewInlineKeyboardRow(
-			tgbotapi.NewInlineKeyboardButtonData("➕", "cart_increment_item_"+strconv.FormatInt(item.ID, 10)),
-			tgbotapi.NewInlineKeyboardButtonData("➖", "cart_decrement_item_"+strconv.FormatInt(item.ID, 10)),
+			tgbotapi.NewInlineKeyboardButtonData(
+				"➕",
+				cart_incr_item.String()+strconv.FormatInt(item.ID, 10),
+			),
+			tgbotapi.NewInlineKeyboardButtonData(
+				"➖",
+				cart_decr_item.String()+strconv.FormatInt(item.ID, 10),
+			),
 		)
 
 		rows = append(rows, itemRow)
@@ -125,7 +133,7 @@ func newCartViewKeyboard(cart *models.Cart) tgbotapi.InlineKeyboardMarkup {
 	backRow := tgbotapi.NewInlineKeyboardRow(
 		tgbotapi.NewInlineKeyboardButtonData(
 			"🔙 Back to Main Menu",
-			"back_to_main",
+			to_main_menu.String(),
 		))
 
 	rows = append(rows, backRow)
@@ -139,22 +147,22 @@ func newCartMenuKeyboard() tgbotapi.InlineKeyboardMarkup {
 		tgbotapi.NewInlineKeyboardRow(
 			tgbotapi.NewInlineKeyboardButtonData(
 				"🛒 View Cart",
-				"view_cart",
+				cart_view.String(),
 			)),
 		tgbotapi.NewInlineKeyboardRow(
 			tgbotapi.NewInlineKeyboardButtonData(
 				"💰 Purchase",
-				"purchase_cart",
+				cart_purchase.String(),
 			)),
 		tgbotapi.NewInlineKeyboardRow(
 			tgbotapi.NewInlineKeyboardButtonData(
 				"✖️️ Drop Cart",
-				"drop_cart",
+				cart_drop.String(),
 			)),
 		tgbotapi.NewInlineKeyboardRow(
 			tgbotapi.NewInlineKeyboardButtonData(
 				"🔙 Back to Main Menu",
-				"back_to_main",
+				to_main_menu.String(),
 			)),
 	)
 }
