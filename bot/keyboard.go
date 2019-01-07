@@ -86,11 +86,11 @@ func newMainMenuKeyboard() tgbotapi.InlineKeyboardMarkup {
 				"🛒 Cart",
 				main_to_cart_menu.String(),
 			)),
-		tgbotapi.NewInlineKeyboardRow(
-			tgbotapi.NewInlineKeyboardButtonData(
-				"⚙️ Settings",
-				main_to_settings.String(),
-			)),
+		// tgbotapi.NewInlineKeyboardRow(
+		// 	tgbotapi.NewInlineKeyboardButtonData(
+		// 		"⚙️ Settings",
+		// 		main_to_settings.String(),
+		// 	)),
 	)
 }
 

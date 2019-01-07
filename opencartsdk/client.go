@@ -35,7 +35,7 @@ func (client *Client) GetRoot() *models.Category {
 
 	rootRequest := func() error {
 		resp, err = client.R().Get("category/root")
-		if resp.StatusCode() != 500 {
+		if resp.StatusCode() == 404 {
 			client.Log.Println(ErrServIsDown)
 			return ErrServIsDown
 		}

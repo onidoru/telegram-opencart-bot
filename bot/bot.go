@@ -53,15 +53,13 @@ func (b *Bot) Run() {
 				users.StoreLastMessageByID(userID, tgbotapi.Message{})
 			}
 		} else if update.PreCheckoutQuery != nil {
-			newPrecheckoutConfig := tgbotapi.PreCheckoutConfig{
+			newPreCheckoutConfig := tgbotapi.PreCheckoutConfig{
 				PreCheckoutQueryID: update.PreCheckoutQuery.ID,
 				OK:                 true,
 				ErrorMessage:       "",
 			}
 
-			responce, err := b.AnswerPreCheckoutQuery(newPrecheckoutConfig)
-
-			fmt.Println(responce, err)
+			b.AnswerPreCheckoutQuery(newPreCheckoutConfig)
 		}
 
 		// finally process
@@ -289,10 +287,10 @@ func (b Bot) processCallback(update tgbotapi.Update, lastMessage tgbotapi.Messag
 
 		// update cart
 		client.UpdateUserCartFromServer(user)
-		paymentAmount := user.Cart.CountTotalAmount()
+		paymentAmount := user.Cart.CountTotalAmount() * 10
 		if paymentAmount <= 0 {
 			// stay iddle as the cart is empty
-			return tgbotapi.Message{}, nil
+			return lastMessage, nil
 		}
 
 		prices := &[]tgbotapi.LabeledPrice{
@@ -305,7 +303,7 @@ func (b Bot) processCallback(update tgbotapi.Update, lastMessage tgbotapi.Messag
 		newInvoice := tgbotapi.NewInvoice(
 			lastMessage.Chat.ID,
 			"Coffee in TgOpenCart",
-			"Hi Sir, you successfully donated us. Thank you for your support!",
+			"Hi Sir! You have 10 seconds to press the Pay button!",
 			"coffee",
 			"635983722:LIVE:i45905717197",
 			"StartParam",
@@ -313,20 +311,9 @@ func (b Bot) processCallback(update tgbotapi.Update, lastMessage tgbotapi.Messag
 			prices,
 		)
 
-		updMessage, err := b.Send(newInvoice)
+		b.Send(newInvoice)
 
-		if err != nil {
-			return lastMessage, err
-		}
-
-		alert := tgbotapi.NewCallbackWithAlert("alerted", "Thank You!")
-		alert.CallbackQueryID = update.CallbackQuery.ID
-		b.AnswerCallbackQuery(alert)
-
-		// clear the cart as items are payed
-		client.DropCart(user)
-
-		return updMessage, nil
+		return lastMessage, nil
 
 	case cart_drop:
 		client.DropCart(user)
