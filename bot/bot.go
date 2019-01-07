@@ -90,9 +90,11 @@ func (b Bot) processNewMessage(update tgbotapi.Update) (tgbotapi.Message, error)
 			registerUser(update.Message.From)
 			msg.Text = "Hello Sir, Welcome to our Hipster Shop"
 		case "pay":
-			price := tgbotapi.LabeledPrice{
-				Label:  "asd",
-				Amount: 30,
+			prices := &[]tgbotapi.LabeledPrice{
+				{
+					Label:  "aasd",
+					Amount: 300,
+				},
 			}
 
 			newInvoice := tgbotapi.NewInvoice(
