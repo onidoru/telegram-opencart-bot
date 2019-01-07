@@ -132,8 +132,8 @@ func newCartViewKeyboard(cart *models.Cart) tgbotapi.InlineKeyboardMarkup {
 
 	backRow := tgbotapi.NewInlineKeyboardRow(
 		tgbotapi.NewInlineKeyboardButtonData(
-			"🔙 Back to Main Menu",
-			main_to_menu.String(),
+			"🛒  Back to Cart",
+			main_to_cart_menu.String(),
 		))
 
 	rows = append(rows, backRow)

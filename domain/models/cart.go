@@ -45,3 +45,16 @@ func (c *Cart) String() string {
 func (c *Cart) GetAllGoods() map[Goods]int {
 	return c.list
 }
+
+func (c *Cart) CountTotalAmount() int {
+	if c.isEmpty {
+		return 0
+	}
+
+	price := 0
+	for item, amount := range c.list {
+		price += int(item.Price.Amount()) * amount
+	}
+
+	return price
+}
