@@ -5,8 +5,7 @@ import (
 )
 
 func main() {
-	// Initialize bot with the given token.
-	bot, err := NewBot("332637329:AAGjEdLxDveCbukkhz-7htYngej5vTrjTws")
+	bot, err := NewBot()
 	if err != nil {
 		panic(err)
 	}

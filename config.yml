@@ -1,0 +1,6 @@
+host:
+  url: YOUR_URL
+
+bot:
+  token: YOUR_BOT_TOKEN
+  payment: YOUR_PAYMENT_TOKEN

@@ -6,19 +6,35 @@ import (
 	"github.com/onidoru/telegram-opencart-bot/domain/models"
 	"github.com/onidoru/telegram-opencart-bot/domain/repository"
 	"github.com/onidoru/telegram-opencart-bot/opencartsdk"
+	"github.com/spf13/viper"
+	"log"
 )
 
-const (
-	hostURL = "https://telegram-coffee-shop.herokuapp.com/"
+var (
+	hostURL      string
+	paymentToken string
+	botToken     string
 )
+
+func init() {
+	viper.AddConfigPath("./")
+	viper.SetConfigType("yml")
+
+	viper.ReadInConfig()
+	log.Printf("Reading config from %s\n", viper.ConfigFileUsed())
+
+	hostURL = viper.GetString("host.url")
+	paymentToken = viper.GetString("bot.payment")
+	botToken = viper.GetString("bot.Token")
+}
 
 type Bot struct {
 	tgbotapi.BotAPI
 }
 
 // NewBot creates and returns new botAPI using the given token.
-func NewBot(token string) (*Bot, error) {
-	bot, err := tgbotapi.NewBotAPI(token)
+func NewBot() (*Bot, error) {
+	bot, err := tgbotapi.NewBotAPI(botToken)
 	if err != nil {
 		return nil, err
 	}
