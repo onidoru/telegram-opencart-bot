@@ -3,7 +3,7 @@
 
 Bot for Telegram OpenCart Backend
 
-Project uses $GOROOT dep management. Config file ``config.yml`` must be edited accordingly before running the bot.
+Project uses standart $GOPATH dep management. Config file ``config.yml`` must be edited accordingly before running the bot.
 
 Compile & Run:
 
